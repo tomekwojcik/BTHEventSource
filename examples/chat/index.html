@@ -1,0 +1,115 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+        <title>EventSource Chat</title>
+        <link rel="stylesheet" type="text/css" href="{{ static_url('bootstrap.min.css') }}" />
+        <!--[if lt IE 9]>
+            <script type="text/javascript" src="{{ static_url('json2.js') }}"></script>
+        <![endif]-->
+        
+        <script type="text/javascript" src="{{ static_url('jquery-1.6.4.min.js') }}"></script>
+        <script type="text/javascript" src="{{ static_url('BTHEventSource.js') }}"></script>
+        
+        <style type="text/css">
+            body { padding-top: 60px; }
+            #main div.chat-wrapper { border: 1px solid #eeeeee; height: 348px; margin: 0px; overflow-y: scroll; }
+            #chat p { margin: 9px; }
+            #form { margin-top: 18px; }
+            #footer { border-top: 1px solid #eeeeee; margin-top: 18px 0px; padding: 18px 0px; text-align: center; }
+        </style>
+        
+        <script type="text/javascript">
+            (function() {
+                $(document).ready(function() {
+                    var post_message = function(message_text) {
+                        message_text = message_text || $('#input-message').val();
+                        if (message_text.length > 0) {
+                            var message = {
+                                'author': $('#username').val(),
+                                'message': message_text
+                            };
+                            
+                            $.ajax({
+                                'url': $('#form form').attr('action'),
+                                'type': $('#form form').attr('method'),
+                                'data': message,
+                                'beforeSend': function() {
+                                    $('#input-message').attr('disabled', true);
+                                },
+                                'complete': function() {
+                                    $('#input-message').attr('disabled', false);
+                                },
+                                'success': function() {
+                                    $('#input-message').val('');
+                                },
+                                'error': function() {
+                                    alert('Failed to send message. Try again later.');
+                                }
+                            });
+                        }
+                    };
+                    
+                    $('#form form').submit(function(event) {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        post_message();
+                        return false;
+                    });
+                    
+                    var source = new BTHEventSource('/events');
+                    
+                    source.error(function() {
+                        alert('Communication error!');
+                    });
+                    
+                    source.message(function(data) {
+                        var date = new Date();
+                        var message = '<p>' + date.toLocaleString() + ' <span class="author">&lt;' + data.author + '&gt;</span>: ' + data.message + '</p>';
+                        $('#chat').append(message);
+                        $('#chat').parent('.row').scrollTop($('#chat').height() - $('#chat').parent('.row').height() + 18);
+                    });
+                    
+                    source.start();
+                });
+            })();
+        </script>
+    </head>
+    <body>
+        <div class="topbar">
+            <div class="fill">
+                <div class="container">
+                    <a class="brand">EventSource Chat</a>
+                    <p class="pull-right"><input id="username" value="Nick" /></p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="main" class="container">
+            <div class="page-header">
+                <h1>EventSource Chat <small>Powered by <a href="http://www.bthlabs.pl/">BTHLabs</a></small></h1>
+            </div>
+            
+            <div class="content">
+                <div class="chat-wrapper row">
+                    <div id="chat"></div>
+                </div>
+                
+                <div id="form" class="row">
+                    <div class="span16">
+                        <form method="post" action="/">
+                            <label for="input-message">Your message:</label>
+                            <div class="input">
+                                <input id="input-message" class="xlarge span10" type="text" size="30" value="" />
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="footer">
+            <div class="container">EventSource Chat by <a href="http://www.bthlabs.pl/">BTHLabs</a> &bull; <a href="https://github.com/tomekwojcik/BTHEventSource">Fork me on GitHub</a></div>
+        </div>
+    </body>
+</html>
