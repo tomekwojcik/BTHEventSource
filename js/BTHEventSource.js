@@ -169,6 +169,7 @@ THE SOFTWARE.
         } else {
             var self = this;
             var url = self.url;
+            var item = null;
             if (window.opera !== undefined) {
                 if (url.indexOf('?') !== -1) {
                     url += '&opera=1';
@@ -201,7 +202,7 @@ THE SOFTWARE.
             for(item in this._message_handlers) {
                 if (this._message_handlers.hasOwnProperty(item) === true) {
                     this._transport.addEventListener(item, function(data) {
-                        var handler = self._message_handlers[item];
+                        var handler = self._message_handlers[data.type];
                         handler(JSON.parse(data.data));
                     }, false);
                 }
