@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>BTHEventSource by tomekwojcik</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/tomekwojcik/BTHEventSource">Fork On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/tomekwojcik/BTHEventSource/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/tomekwojcik/BTHEventSource/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>BTHEventSource</h1>
+          <p>Cross-browser Server-Sent Events Wrapper</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/tomekwojcik">tomekwojcik</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="http://twitter.com/#!/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h1>BTHEventSource</h1>
+
+<p><strong>Cross-browser Server-Sent Events Wrapper</strong></p>
+
+<p>This is a small and experimental wrapper for EventSource. It's intended to work out differences between browser implementations and provide XHR long-polling fallback when EventSource isn't available.</p>
+
+<h2>Requirements</h2>
+
+<p>The only requirement is <code>window.JSON</code> object. If you target browsers that don't provide a native JSON implementation (e.g. IE 6/7) then it's required that you provide it. The usual (and recommended) implementation is <a href="https://github.com/douglascrockford/JSON-js">JSON-js</a>.</p>
+
+<h2>Backend</h2>
+
+<p>JSON is used as data format for all the messages, regardless of transport. When working with SSE the backend should set Content-Type header to "text/event-stream" (for Firefox and WebKits) or "application/x-dom-event-stream" (for Opera). EventSource URL will be passed an additional query string parameter <code>opera=1</code> to indicate that the UA is Opera. In case of XHR long-polling respond with "application/json".</p>
+
+<p>XHR long-polling response format:</p>
+
+<div class="highlight">
+<pre><span class="p">{</span> <span class="s1">'id'</span><span class="o">:</span> <span class="mi">1234567890</span><span class="p">,</span> <span class="s1">'event'</span><span class="o">:</span> <span class="s1">'event-name'</span><span class="p">,</span> <span class="s1">'data'</span><span class="o">:</span> <span class="s1">'event-data'</span> <span class="p">}</span>
+</pre>
+</div>
+
+
+<p>The only required field is <code>data</code>. The <code>id</code> and <code>event</code> correspond to <code>id</code> and <code>event</code> fields of event stream. Consult <a href="http://www.html5rocks.com/en/tutorials/eventsource/basics/">this tutorial</a> if you need more info. <code>retry</code> field isn't supported.</p>
+
+<p>Event ID will be passed as an EventSource URL query string parameter <code>last_event_id</code> if previous request timed out or returned an error. If previous request was successful but no data was received (e.g. due to lack of data to send from backend) then Event ID won't be passed to the backend.</p>
+
+<p>Check out <code>backend/btheventsource.py</code> for an example implementation for Tornado 2.</p>
+
+<h2>Frontend</h2>
+
+<h3>Installation</h3>
+
+<div class="highlight">
+<pre><span class="kd">var</span> <span class="nx">source</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">BTHEventSource</span><span class="p">(</span><span class="s1">'/events'</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">xhr_source</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">BTHEventSource</span><span class="p">(</span><span class="s1">'/events'</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+</pre>
+</div>
+
+
+<p>The first argument is the URL of event stream. The second is optional and if you provide anything that's not <code>undefined</code> you'll force XHR long-polling.</p>
+
+<h3>Registering event handlers</h3>
+
+<div class="highlight">
+<pre><span class="nx">source</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="nx">alert</span><span class="p">(</span><span class="s1">'The connection was opened!'</span><span class="p">);</span> <span class="p">});</span>
+<span class="nx">source</span><span class="p">.</span><span class="nx">close</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="nx">alert</span><span class="p">(</span><span class="s1">'The connection was closed :(.'</span><span class="p">);</span> <span class="p">});</span>
+<span class="nx">source</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="nx">alert</span><span class="p">(</span><span class="s1">'Communication error. Crap.'</span><span class="p">);</span> <span class="p">});</span>
+<span class="nx">source</span><span class="p">.</span><span class="nx">message</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span> <span class="nx">alert</span><span class="p">(</span><span class="s1">'Received an unnamed event.'</span><span class="p">);</span> <span class="p">});</span>
+<span class="nx">source</span><span class="p">.</span><span class="nx">message</span><span class="p">(</span><span class="s1">'myEvent'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span> <span class="nx">alert</span><span class="p">(</span><span class="s1">'Received "myEvent" event.'</span><span class="p">);</span> <span class="p">});</span>
+</pre>
+</div>
+
+
+<h3>Interacting with the source</h3>
+
+<div class="highlight">
+<pre><span class="nx">source</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span>
+<span class="nx">source</span><span class="p">.</span><span class="nx">stop</span><span class="p">();</span>
+</pre>
+</div>
+
+
+<h3>Caveats</h3>
+
+<ul>
+<li>To open the communication channel (regardless of transport) you have to call <code>start()</code> explicitly,</li>
+<li>
+<code>open</code> event will fire after the transport receives the very first event. This applies both to SSE and XHR transports. Note that SSE behavior is browser-dependent and may change,</li>
+<li>
+<code>close</code> event will not be fired on Opera because the browser doesn't fire internal SSE <code>error</code> event when the connection is closed,</li>
+<li>
+<code>close</code> event will be fired for <strong>every</strong> XHR request that times out,</li>
+<li>cross-domain requests aren't supported.</li>
+</ul><h2>Browser compatibility</h2>
+
+<p>I tested the wrapper on IE 6/7/8, FF 3.6/6/7, Safari 5, Chrome 14 and Opera 11.51 running under Mac OS X 10.6 and/or Windows XP.</p>
+
+<h2>Example</h2>
+
+<p>Under <code>examples/chat/</code> you'll find a small Tornado chat app that uses BTHEventSource to deliver updates to users. It's not perfect but does the job of both working and showing the wrapper in action.</p>
+
+<h2>License</h2>
+
+<p>MIT-style, see LICENSE.</p>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><!--<![endif]-->
+  </body>
+</html>
